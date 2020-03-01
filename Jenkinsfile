@@ -22,13 +22,25 @@ pipeline {
       }
     }
 
-    stage('Deliver') {
+    stage('Push') {
       steps {
-        sh './jenkins/scripts/deliver.sh'
-        input 'Finished using the web site? (Click "Proceed" to continue)'
-        sh './jenkins/scripts/kill.sh'
-      }
+        sh '''node {
+    stage \'build-demo\'
+    //this triggers the Jenkins job that builds the container
+    //build \'demo\'
+ 
+    stage \'Publish containers\'
+    shouldPublish = input message: \'Publish Containers?\', parameters: [[$class: \'ChoiceParameterDefinition\', choices: \'yes\\nno\', description: \'\', name: \'Deploy\']]
+    if(shouldPublish == "yes") {
+     echo "Publishing docker containers"
+     sh "\\$(aws ecr get-login)"
+ 
+     sh "docker tag demo:latest 106351253171.dkr.ecr.ap-southeast-2.amazonaws.com/demo:latest"
+     sh "docker push 106351253171.dkr.ecr.ap-southeast-2.amazonaws.com/demo:latest"
     }
+}'''
+        }
+      }
 
+    }
   }
-}
